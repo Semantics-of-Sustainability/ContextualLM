@@ -1,14 +1,10 @@
-import collections
 from dataclasses import dataclass
-from functools import cache, cached_property
-from itertools import islice
-from typing import Iterable, List, Optional, Tuple
+from functools import cached_property
+from typing import List, Tuple
 
 import numpy as np
 from numpy.typing import ArrayLike
 from transformers.pipelines.feature_extraction import FeatureExtractionPipeline
-
-from src.coha_doc import CohaDoc
 
 BEGIN_OF_WORD_CHAR = "Ġ"
 
@@ -16,15 +12,12 @@ BEGIN_OF_WORD_CHAR = "Ġ"
 @dataclass
 class Sentence:
     text: str
-    coha_doc: CohaDoc
     model: FeatureExtractionPipeline
+    year: int
+    filename: str
 
     def __contains__(self, s: str):
         return s in self.text
-
-    @property
-    def year(self) -> Optional[int]:
-        return self.coha_doc.year
 
     @property
     def tokenizer(self):
@@ -100,3 +93,4 @@ class Sentence:
             self.model.model.config.hidden_size,
         ), f"Invalid shape: {a.shape} for token index {token_start_index}, token length {n_tokens}."
         return a
+
