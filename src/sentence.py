@@ -1,3 +1,4 @@
+import string
 from dataclasses import dataclass
 from functools import cached_property
 from typing import List, Tuple
@@ -22,6 +23,10 @@ class Sentence:
     @property
     def tokenizer(self):
         return self.model.tokenizer
+
+    @property
+    def max_position_embeddings(self) -> int:
+        return self.model.model.config.max_position_embeddings
 
     @cached_property
     def _embeddings(self):
@@ -51,9 +56,11 @@ class Sentence:
         Yields: Tuple[int, int]: the token index and the length (number of tokens to be merged)
         """
 
+        last_token_i = min(len(self._tokens), self.max_position_embeddings - 1)
+
         for window_size in range(1, max_n):
-            for window_index in range(1, len(self._tokens)):
-                if window_index + window_size < len(self._tokens):
+            for window_index in range(1, last_token_i):
+                if window_index + window_size < last_token_i:
                     first_token = self._tokens[window_index]
                     merged_token = self.tokenizer.convert_tokens_to_string(
                         self._tokens[window_index : window_index + window_size]
@@ -66,6 +73,7 @@ class Sentence:
                     is_word_end = (
                         next_token.startswith(BEGIN_OF_WORD_CHAR)
                         or next_token == self.tokenizer.special_tokens_map["eos_token"]
+                        or all(c in string.punctuation for c in next_token)
                     )
 
                     if is_word_begin and merged_token.strip() == token and is_word_end:
@@ -73,11 +81,11 @@ class Sentence:
 
     def _aggregate_embeddings(self, token_start_index: int, n_tokens: int) -> ArrayLike:
         """Return a one-dimensional array of the (aggregated) token embedding(s).
-        
+
         Args:
             - token_start_index: the token position in the sentence, according to the model's tokenizer
             - n_tokens: the number of tokens to aggregate (1 for a single token)
-        
+
         Returns:
             A vector of shape (<embedding dimensionlaity, 1)
             for the token embedding at the given position, or the mean of multiple token embeddings
@@ -93,4 +101,3 @@ class Sentence:
             self.model.model.config.hidden_size,
         ), f"Invalid shape: {a.shape} for token index {token_start_index}, token length {n_tokens}."
         return a
-
