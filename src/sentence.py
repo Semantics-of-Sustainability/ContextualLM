@@ -1,7 +1,7 @@
 import string
 from dataclasses import dataclass
 from functools import cached_property
-from typing import List, Tuple
+from typing import Generator, List, Tuple
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -39,6 +39,17 @@ class Sentence:
     @property
     def _tokens(self) -> List[str]:
         return self.model.tokenizer.convert_ids_to_tokens(self._token_ids)
+
+    def context_embeddings_matrix(
+        self, token: str, context_size: int
+    ) -> List[ArrayLike]:
+        """Compute embeddings for occurences of a term based on a smaller context."""
+        return [
+            embedding
+            for sentence in self.to_context_sentences(token, context_size)
+            for embeddings in sentence.embeddings_matrix(token)
+            for embedding in embeddings
+        ]
 
     def embeddings_matrix(self, token: str) -> List[ArrayLike]:
         return [
@@ -101,3 +112,15 @@ class Sentence:
             self.model.model.config.hidden_size,
         ), f"Invalid shape: {a.shape} for token index {token_start_index}, token length {n_tokens}."
         return a
+
+    def to_context_sentences(
+        self, token: str, context_size: int
+    ) -> Generator["Sentence", None, None]:
+        """Generate a new sentence object for each occurence of a term with a smaller window."""
+
+        i: int = self.text.find(token)
+        while i >= 0:
+            start = max(0, i - context_size / 2)
+            end = min(len(self.text), i + len(token) + context_size / 2)
+            yield Sentence(self.text[int(start):int(end)], self.model, self.year, self.filename)
+            i = self.text.find(token, i + len(token))
