@@ -117,7 +117,6 @@ class Sentence:
 
         return a
 
-    # TODO: call sentences() method instead
     def to_contexts(
         self, token: str, context_characters: int
     ) -> Generator["Context", None, None]:
