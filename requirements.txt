@@ -1,0 +1,14 @@
+# Runtime dependencies
+transformers
+datasets
+pandas
+matplotlib
+umap-learn
+datashader
+bokeh
+holoviews
+colorcet
+scikit-image
+
+# test dependencies
+pytest
