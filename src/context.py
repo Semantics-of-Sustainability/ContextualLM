@@ -62,15 +62,6 @@ class Context(Sentence):
     def _word_index(self) -> Optional[int]:
         return self._encoding.char_to_word(self._char_index)
 
-    def _find_token(self) -> Optional[TokenSpan]:
-        if word_index := self._word_index():
-            return self._encoding.word_to_tokens(word_index)
-        else:
-            logging.warning(
-                f"Could not find token '{self.token}' at position {self._char_index}"
-            )
-            return None
-
     @classmethod
     def contexts(
         cls,
@@ -79,7 +70,19 @@ class Context(Sentence):
         context_characters: int,
         model: FeatureExtractionPipeline,
         metadata: Dict[str, Any],
-    ) -> Generator["Sentence", None, None]:
+    ) -> Generator["Context", None, None]:
+        """Generate a Context object for each occurence of a token as a full word in a text.
+
+        Args:
+            - text: a text
+            - token: a word/token
+            - context_characters: the number of characters to extract from the text around the occurrence of the token
+            - the model to use for generating embeddings and tokenization
+            - metadata for the context
+
+        Yields:
+            A Context object for each occurrence of the token in which it constitutes a whole word.
+        """
 
         match_index = text.find(token)
         while match_index >= 0:
