@@ -1,25 +1,26 @@
 import logging
-from dataclasses import dataclass
 from typing import Any, Dict, Generator, List, Optional
 
-from numpy.typing import ArrayLike
+import torch
+from transformers import RobertaModel, RobertaTokenizerFast
 from transformers.pipelines.feature_extraction import FeatureExtractionPipeline
 from transformers.tokenization_utils_base import CharSpan, TokenSpan
 
-from .sentence import Sentence
+from .text import Text
 
 
-class Context(Sentence):
+class Context(Text):
     def __init__(
         self,
         text: str,
-        model: FeatureExtractionPipeline,
+        model: RobertaModel,
+        tokenizer: RobertaTokenizerFast,
         metadata: Dict[str, Any],
         token: str,
         char_index: int,
     ) -> None:
 
-        super().__init__(text, model, metadata)
+        super().__init__(text, model, tokenizer, metadata)
 
         self._token = token
         self._char_index = char_index
@@ -31,7 +32,7 @@ class Context(Sentence):
     def token(self) -> str:
         return self._token
 
-    def token_embedding(self) -> Optional[ArrayLike]:
+    def token_embedding(self) -> Optional[torch.Tensor]:
         if self.has_word():
             if token_span := self._word_to_tokens():
                 return self._aggregate_embeddings(token_span)
@@ -54,7 +55,7 @@ class Context(Sentence):
             self._encoding.char_to_word(self._char_index)
         )
 
-    def _word_to_tokens(self):
+    def _word_to_tokens(self) -> TokenSpan:
         return self._encoding.word_to_tokens(
             self._encoding.char_to_word(self._char_index)
         )
@@ -69,6 +70,7 @@ class Context(Sentence):
         token: str,
         context_characters: int,
         model: FeatureExtractionPipeline,
+        tokenizer: RobertaTokenizerFast,
         metadata: Dict[str, Any],
     ) -> Generator["Context", None, None]:
         """Generate a Context object for each occurence of a token as a full word in a text.
@@ -91,7 +93,12 @@ class Context(Sentence):
             end = min(len(text), match_index + len(token) + window_radius)
 
             context = cls(
-                text[int(start) : int(end)], model, metadata, token, match_index - start
+                text[int(start) : int(end)],
+                model,
+                tokenizer,
+                metadata,
+                token,
+                match_index - start,
             )
 
             if context.has_word():
