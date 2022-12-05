@@ -60,14 +60,14 @@ class Text:
     def max_position_embeddings(self) -> int:
         return self.model.config.max_position_embeddings
 
-    @cached_property
+    @property
     def _embeddings(self):
         output = self.model(**self._encoding_tensors)
         return torch.stack(
             output.hidden_states[-self.AVERAGE_LAST_OUTPUT_LAYERS :]
         ).mean(axis=0)[0]
 
-    @cached_property
+    @property
     def _encoding(self) -> BatchEncoding:
         return self.tokenizer(self.text)
 
