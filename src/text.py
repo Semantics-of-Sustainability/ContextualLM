@@ -84,7 +84,7 @@ class Text:
         return self._encoding.word_ids()
 
     @property
-    def _tokens(self) -> List[str]:
+    def _tokens(self) -> List[str] | str:
         return self.tokenizer.convert_ids_to_tokens(self._token_ids)
 
     def embeddings_matrix(self, token: str) -> List[torch.Tensor]:

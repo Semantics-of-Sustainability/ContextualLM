@@ -46,7 +46,7 @@ class CohaDoc:
         with open(self._path, "rt", encoding=self._encoding) as f:
             return f.read()
 
-    def sentences(self):
+    def sentences(self) -> List[str]:
         sentences = re.findall(SENTENCE_PATTERN, self.text)
         assert (
             sentences[0].strip() == f"@@{self._id}"

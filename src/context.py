@@ -55,7 +55,7 @@ class Context(Text):
             self._encoding.char_to_word(self._char_index)
         )
 
-    def _word_to_tokens(self) -> TokenSpan:
+    def _word_to_tokens(self) -> Optional[TokenSpan]:
         return self._encoding.word_to_tokens(
             self._encoding.char_to_word(self._char_index)
         )
@@ -69,7 +69,7 @@ class Context(Text):
         text: str,
         token: str,
         context_characters: int,
-        model: FeatureExtractionPipeline,
+        model: RobertaModel,
         tokenizer: RobertaTokenizerFast,
         metadata: Dict[str, Any],
     ) -> Generator["Context", None, None]:
