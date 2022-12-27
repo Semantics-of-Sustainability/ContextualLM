@@ -1,4 +1,6 @@
+import logging
 import os
+from math import ceil
 from pathlib import Path
 from typing import Generator, List
 
@@ -13,15 +15,26 @@ from .settings import ENCODING
 class SentenceConverter:
     """Use SpaCy for sentence splitting"""
 
-    def __init__(self, spacy_model, max_doc_length: int = 2000000) -> None:
-        spacy_model.max_length = max_doc_length
+    def __init__(self, spacy_model) -> None:
         self._spacy = spacy_model
 
     def _process(self, text: str) -> Generator[str, None, None]:
-        # TODO: prepend date
-        doc = self._spacy(text)
-        for sent in doc.sents:
-            yield str(sent)
+        # TODO: prepend date?
+
+        chunk_size = self._spacy.max_length
+        n_chunks = ceil(len(text) / chunk_size)
+        if n_chunks > 1:
+            logging.warning(
+                f"Chunking long text with {len(text)} characters into {n_chunks} chunks."
+            )
+
+        for chunk in range(0, n_chunks):
+            start = chunk * chunk_size
+            end = min((chunk + 1) * chunk_size, len(text))
+
+            doc = self._spacy(text[start:end])
+            for sent in doc.sents:
+                yield str(sent) + os.linesep
 
     def convert_csv(
         self,
@@ -32,7 +45,7 @@ class SentenceConverter:
         encoding: str = ENCODING,
         parse_dates: List[str] = ["date"],
         sep=";",
-        **kwargs
+        **kwargs,
     ) -> Generator[str, None, None]:
 
         df: pd.DataFrame = pd.read_csv(
@@ -57,7 +70,7 @@ class SentenceConverter:
         try:
             model = spacy.load(model_name)
         except OSError:
-            spacy.cli.download(model_name)  # TODO: test
+            spacy.cli.download(model_name)
             model = spacy.load(model_name)
 
         for component in model.pipe_names:

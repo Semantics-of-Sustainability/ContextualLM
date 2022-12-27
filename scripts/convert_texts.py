@@ -1,6 +1,8 @@
 import argparse
-import os
+from pathlib import Path
 import sys
+
+from tqdm import tqdm
 
 from convert.sentence import SentenceConverter
 from convert.settings import ENCODING
@@ -11,12 +13,14 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "-i",
-        "--input",
-        type=argparse.FileType("r"),
-        nargs="+",
-        default=sys.stdin,
-        help="The input file(s). Default to stdin.",
+        "-p", "--path", type=Path, required=True, help="Input directory."
+    )
+    parser.add_argument(
+        "-g",
+        "--glob",
+        type=str,
+        default="*",
+        help="Glob for identifying input files in the input directory.",
     )
     parser.add_argument(
         "-o",
@@ -46,8 +50,10 @@ if __name__ == "__main__":
 
     converter = SentenceConverter.from_spacy(args.spacy_model)
 
-    for input_file in args.input:
-        for line in converter.convert_csv(input_file.name, text_columns=args.columns):
+    input_files = list(args.path.glob(args.glob))
+
+    for input_file in tqdm(input_files, unit="file", desc="Reading"):
+        for line in converter.convert_csv(input_file, text_columns=args.columns):
             args.output.write(line)
 
     args.output.close()

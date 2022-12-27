@@ -9,6 +9,7 @@ bokeh
 holoviews
 colorcet
 scikit-image
+spacy
 
 # test dependencies
 pytest
